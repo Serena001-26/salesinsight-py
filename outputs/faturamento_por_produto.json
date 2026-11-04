@@ -1,0 +1,30 @@
+[
+    {
+        "produto":"Headset",
+        "faturamento":48879.79
+    },
+    {
+        "produto":"Monitor",
+        "faturamento":205212.61
+    },
+    {
+        "produto":"Mouse",
+        "faturamento":19040.82
+    },
+    {
+        "produto":"Notebook",
+        "faturamento":493242.63
+    },
+    {
+        "produto":"Smartphone",
+        "faturamento":343721.95
+    },
+    {
+        "produto":"Tablet",
+        "faturamento":236519.71
+    },
+    {
+        "produto":"Teclado",
+        "faturamento":33592.8
+    }
+]

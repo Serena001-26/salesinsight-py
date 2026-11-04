@@ -3,9 +3,10 @@ import numpy as np
 import random
 from datetime import datetime, timedelta
 import os
+import matplotlib.pyplot as plt
 
 def gerar_dataset_vendas(n_registros=200, seed=42):
-    """Gera um dataset sintetico de vendas com dados sujos."""
+    """Gera um dataset sintetico de vendas com dados sujos (RF01)."""
     random.seed(seed)
     np.random.seed(seed)
 
@@ -32,9 +33,9 @@ def gerar_dataset_vendas(n_registros=200, seed=42):
         data_txt = data.strftime("%Y-%m-%d")
         cliente = f"Cliente_{random.randint(1, 50):03d}"
 
-        # --- sujeira proposital para a etapa de limpeza --- 
+        # --- sujeira proposital --- 
         if random.random() < 0.03:
-            data_txt = "DATA INVALIDA"        # data invalida
+            data_txt = "DATA INVALIDA"
 
         dados.append({
             "id_venda": i + 1,
@@ -94,11 +95,13 @@ def tratar_dados(df):
 
 
 def analisar_vendas(df):
-    """Realiza analises exploratorias e agrupamentos (RF04)."""
+    """Realiza analises exploratorias, calculos e agrupamentos (RF04 e RF05)."""
     print("\n=== ANALISE EXPLORATORIA DE VENDAS ===")
     
+    # RF04: Coluna derivada
     df["faturamento"] = df["quantidade"] * df["preco_unitario"]
     
+    # RF05: Groupby
     fat_produto = df.groupby("produto")["faturamento"].sum().reset_index()
     print("\nFaturamento por Produto:\n", fat_produto)
     
@@ -108,19 +111,78 @@ def analisar_vendas(df):
     return df, fat_produto, vendas_regiao
 
 
-def exportar_resultados(df_limpo, fat_produto, vendas_regiao):
-    """Exporta os dados limpos e relatorios para a pasta outputs (RF05)."""
+def segmentar_clientes(df):
+    """Segmenta os clientes por nivel de gasto (RF06)."""
+    print("\n=== SEGMENTACAO DE CLIENTES ===")
+    gasto_cliente = df.groupby("cliente")["faturamento"].sum().reset_index()
+    
+    quantil_33 = gasto_cliente["faturamento"].quantile(0.33)
+    quantil_66 = gasto_cliente["faturamento"].quantile(0.66)
+    
+    def rotular_cliente(valor):
+        if valor >= quantil_66:
+            return "Alto"
+        elif valor >= quantil_33:
+            return "Medio"
+        else:
+            return "Baixo"
+            
+    gasto_cliente["nivel_gasto"] = gasto_cliente["faturamento"].apply(rotular_cliente)
+    print("\nResumo da Segmentacao:\n", gasto_cliente["nivel_gasto"].value_counts())
+    
+    return gasto_cliente
+
+
+def gerar_visualizacoes(fat_produto, vendas_regiao):
+    """Gera graficos com Matplotlib e salva em outputs (RF07)."""
     os.makedirs("outputs", exist_ok=True)
     
+    # Grafico 1: Faturamento por Produto
+    plt.figure(figsize=(8, 4))
+    plt.bar(fat_produto["produto"], fat_produto["faturamento"], color="skyblue")
+    plt.title("Faturamento Total por Produto")
+    plt.xlabel("Produto")
+    plt.ylabel("Faturamento (R$)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig("outputs/faturamento_por_produto.png")
+    plt.close()
+
+    # Grafico 2: Faturamento por Regiao
+    plt.figure(figsize=(8, 4))
+    plt.bar(vendas_regiao["regiao"], vendas_regiao["faturamento"], color="salmon")
+    plt.title("Faturamento Total por Regiao")
+    plt.xlabel("Regiao")
+    plt.ylabel("Faturamento (R$)")
+    plt.tight_layout()
+    plt.savefig("outputs/faturamento_por_regiao.png")
+    plt.close()
+    
+    print("\n=== VISUALIZACOES GERADAS ===")
+    print("Graficos salvos como PNG em 'outputs/'.")
+
+
+def exportar_resultados(df_limpo, fat_produto, vendas_regiao, gasto_cliente):
+    """Exporta os resultados em CSV e JSON (RF09)."""
+    os.makedirs("outputs", exist_ok=True)
+    
+    # CSV
     df_limpo.to_csv("outputs/vendas_limpo.csv", index=False)
     fat_produto.to_csv("outputs/faturamento_por_produto.csv", index=False)
     vendas_regiao.to_csv("outputs/faturamento_por_regiao.csv", index=False)
+    gasto_cliente.to_csv("outputs/segmentacao_clientes.csv", index=False)
     
-    print("\n=== EXPORTACAO CONCLUIDA ===")
-    print("Arquivos salvos na pasta 'outputs/'.")
+    # JSON
+    fat_produto.to_json("outputs/faturamento_por_produto.json", orient="records", indent=4)
+    vendas_regiao.to_json("outputs/faturamento_por_regiao.json", orient="records", indent=4)
+    gasto_cliente.to_json("outputs/segmentacao_clientes.json", orient="records", indent=4)
+    
+    print("\n=== EXPORTACAO CONCLUIDA (CSV e JSON) ===")
+    print("Todos os relatorios foram exportados para a pasta 'outputs/'.")
 
 
 if __name__ == "__main__":
+    # RF10: Executar o fluxo completo
     df_bruto = gerar_dataset_vendas()
     df_bruto.to_csv("vendas.csv", index=False)
     print(f"Dataset gerado com {len(df_bruto)} registros e salvo em vendas.csv.")
@@ -129,4 +191,7 @@ if __name__ == "__main__":
     df_limpo, _ = tratar_dados(df_bruto)
     
     df_limpo, fat_produto, vendas_regiao = analisar_vendas(df_limpo)
-    exportar_resultados(df_limpo, fat_produto, vendas_regiao)
+    gasto_cliente = segmentar_clientes(df_limpo)
+    
+    gerar_visualizacoes(fat_produto, vendas_regiao)
+    exportar_resultados(df_limpo, fat_produto, vendas_regiao, gasto_cliente)
