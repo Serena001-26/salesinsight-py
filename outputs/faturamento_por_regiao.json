@@ -1,0 +1,22 @@
+[
+    {
+        "regiao":"Centro-Oeste",
+        "faturamento":342981.92
+    },
+    {
+        "regiao":"Nordeste",
+        "faturamento":302857.88
+    },
+    {
+        "regiao":"Norte",
+        "faturamento":305196.63
+    },
+    {
+        "regiao":"Sudeste",
+        "faturamento":266608.04
+    },
+    {
+        "regiao":"Sul",
+        "faturamento":162565.84
+    }
+]
